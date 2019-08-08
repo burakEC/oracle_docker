@@ -1,0 +1,60 @@
+version: "3.7"
+services:
+    wlsadmin:
+        image: oracle/weblogic:10.3.6-dockerdomain
+        container_name: wlsadmin
+        hostname: wlsadmin
+        networks:
+           weblogic:
+              ipv4_address: 172.30.0.2
+        ports:
+           - 7001:7001
+           - 7011:7011
+        privileged: true
+        restart: always
+        env_file:
+           - ./container-scripts/domain.properties
+        volumes:
+           - /oracle/middleware/user_projects:/oracle/middleware/user_projects
+    instance1:
+        image: oracle/weblogic:10.3.6-dockerdomain
+        container_name: instance1
+        hostname: instance1
+        networks:
+           weblogic:
+              ipv4_address: 172.30.0.3
+        ports:
+           - 9001:9001
+           - 9011:9011
+        privileged: true
+        restart: always
+        env_file:
+           - ./container-scripts/domain.properties
+        environment:
+           - MS_NAME=instance1
+           - MS_HOST=instance1
+           - MS_PORT=9001
+           - MS_SSL_PORT_ENABLED=true
+           - MS_SSL_PORT=9011
+           - NM_HOME=/oracle/middleware/wlserver_10.3/common/nodemanager
+           - NM_NAME=instance1_nm
+           - NM_TYPE=Plain
+           - NM_PORT=5556
+           - USER_MEM_ARGS=-Xms2048m -Xmx4096m
+           - CLASSPATH_ARGS=/oracle/middleware/modules/javax.persistence_1.1.0.0_2-0.jar:/oracle/middleware/modules/com.oracle.jpa2support_1.0.0.0_2-1.jar:$$CLASSPATH
+           - USER_INSTANCE_ARGS=-Djava.awt.headless=true -Dsecurity.provider=ace -Dserver.ipAddressCheck=false
+           - ADD_TO_CLSTR=false
+           - WL_PLUGIN=true
+           - DS_LIST=app_ds.properties,job_ds.properties,report_ds.properties
+           - SELF_SIGN_SSL=true
+        volumes:
+           - /oracle/middleware/user_projects:/oracle/middleware/user_projects
+        command:
+           - createServer.sh
+networks:
+  weblogic:
+    name: weblogic
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 172.30.0.0/24
